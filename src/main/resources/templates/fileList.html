@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>文件管理</title>
+    <link th:href="@{css/bootstrap.min.css}" rel="stylesheet" type="text/css" />
+    <link th:href="@{css/shade.css}" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" th:src="@{/js/jquery.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/bootstrap.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/spin.min.js}"></script>
+    <script type="text/javascript" th:src="@{/js/popper.min.js}"></script>
+</head>
+<body class="container" >
+
+<form id="fileForm" enctype="multipart/form-data" method="post" action="/upload">
+    <div class="form-group">
+        <div class="col-sm-6">
+            <div class="input-group">
+                <input id='location' class="form-control" onclick="$('#i-file').click();">
+                <label class="input-group-btn">
+                    <input type="button" id="i-check" value="上传文件" class="btn btn-primary" onclick="$('#i-file').click();">
+                </label>
+            </div>
+        </div>
+        <input type="file" name="file" id='i-file'  onchange="selectFile()" style="display: none">
+    </div>
+</form>
+
+
+    <div class="with:50%" th:if="${pageUtil.sumPage > 0}">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>#</th>
+                <th>文件名称</th>
+                <th>文件大小</th>
+                <th>下载</th>
+                <th>删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="fileInfo : ${fileInfos}">
+                <th scope="row" th:text="${fileInfoStat.index + 1}">1</th>
+                <td th:text="${fileInfo.fileName}"></td>
+                <td th:text="${fileInfo.fileSize}"></td>
+                <td><a th:href="@{'/download?fileName=' + ${fileInfo.fileName}}" th:text="下载"></a></td>
+<!--                <td><a th:href="@{'/del?delFileName=' + ${fileInfo.fileName}}" th:text="删除"></a></td>-->
+                <td><a onclick="return del()" th:href="@{'/del?delFileName=' + ${fileInfo.fileName}}" th:text="删除"></a></td>
+            </tr>
+            </tbody>
+        </table>
+
+    </div>
+    <div class="modal-footer no-margin-top" th:if="${pageUtil.sumPage > 0}">
+        <ul class="pagination pull-right no-margin">
+
+            <!-- 首页 -->
+            <li>
+                <a th:href="'/show?currentPage=0'">首页</a>
+            </li>
+
+            <!-- 上一页 -->
+            <li th:if="${pageUtil.currentPage > 0}">
+                <a th:href="'/show?currentPage=' + ${pageUtil.currentPage - 1}" th:text="上一页"></a>
+            </li>
+
+            <!-- 中间页 -->
+            <li th:each="pageNum:${#numbers.sequence(0, (pageUtil.sumPage) - 1)}">
+                <a th:href="'/show?currentPage=' + ${pageNum}" th:text="${pageNum + 1}" th:if="${pageNum ne pageUtil.currentPage}"></a>
+                <a th:href="'/show?currentPage=' + ${pageNum}" th:text="${pageNum + 1}" th:if="${pageNum eq pageUtil.currentPage}" th:style="'font-weight:bold;background: #6faed9;'"></a>
+            </li>
+
+            <!-- 下一页 -->
+            <li th:if="${pageUtil.currentPage < pageUtil.sumPage - 1}">
+                <a th:href="'/show?currentPage=' + ${pageUtil.currentPage + 1}" th:text="下一页"></a>
+            </li>
+
+            <!-- 尾页 -->
+            <li>
+                <a th:href="'/show?currentPage=' + ${pageUtil.sumPage - 1}">尾页</a>
+            </li>
+        </ul>
+    </div>
+    <div th:if="${message != null && message.success != null}" class="alert alert-success alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <strong th:text="${message.success}"></strong>
+    </div>
+
+    <div th:if="${message != null && message.error != null}"  class="alert alert-danger alert-dismissible">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <strong th:text="${message.error}"></strong>
+    </div>
+
+<div  id="overlay">
+</div>
+
+</body>
+<script th:inline="javascript">
+    window.setTimeout(function(){
+        $('[data-dismiss="alert"]').alert('close');
+    },3000);
+    function del() {
+        if(confirm("确定要删除吗？")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    var selectFile = function () {
+        $('#location').val($('#i-file').val());
+        $('#fileForm').submit();
+        showOverlay();
+        // $('#fileForm').reset();
+        $("#fileForm input").val("");
+    }
+
+    /* 显示遮罩层 */
+    function showOverlay() {
+        $("#overlay").height(pageHeight());
+        $("#overlay").width(pageWidth());
+
+        // fadeTo第一个参数为速度，第二个为透明度
+        // 多重方式控制透明度，保证兼容性，但也带来修改麻烦的问题
+        $("#overlay").fadeTo(200, 0.5);
+    }
+
+    /* 隐藏覆盖层 */
+    function hideOverlay() {
+        $("#overlay").fadeOut(200);
+    }
+
+    /* 当前页面高度 */
+    function pageHeight() {
+        return $('body').height;
+    }
+
+    /* 当前页面宽度 */
+    function pageWidth() {
+        return $('body').width;
+    }
+</script>
+</html>
