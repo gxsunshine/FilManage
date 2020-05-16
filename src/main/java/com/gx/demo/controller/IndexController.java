@@ -14,11 +14,9 @@ import javax.servlet.http.HttpServletRequest;
  */
 @Controller
 public class IndexController {
-    @Autowired
-    FileController fileController;
 
     @RequestMapping(value = "/")
-    public ModelAndView uploading(HttpServletRequest request) {
-        return fileController.show(request, null);
+    public String uploading(HttpServletRequest request) {
+        return "redirect:/show";
     }
 }

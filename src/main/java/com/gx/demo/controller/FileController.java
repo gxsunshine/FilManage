@@ -4,6 +4,7 @@ import com.gx.demo.model.FileInfo;
 import com.gx.demo.model.Message;
 import com.gx.demo.model.PageUtil;
 import com.gx.demo.utils.FileUtils;
+import org.apache.catalina.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -45,7 +47,9 @@ public class FileController {
      * 处理文件上传
      */
     @RequestMapping(value = "/upload")
-    public ModelAndView uploading(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+    public String uploading(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+
+        HttpSession session = request.getSession();
         File targetFile = new File(filepath);
         Message message = new Message();
         if (!targetFile.exists()) {
@@ -55,7 +59,8 @@ public class FileController {
         for(File diskFile: files){
             if(diskFile.getName().equals(file.getOriginalFilename())){
                 message.setError("文件上传失败！文件名重复，该文件已上传；建议修改文件名后继续上传，或者删除已上传的文件");
-                return show(request, message);
+                session.setAttribute("message", message);
+                return "redirect:/show";
             }
         }
         try (FileOutputStream out = new FileOutputStream(filepath + file.getOriginalFilename());){
@@ -69,24 +74,31 @@ public class FileController {
         }
         logger.info("文件上传成功!");
         message.setSuccess("文件上传成功!");
-        return show(request, message);
+        session.setAttribute("message", message);
+        return "redirect:/show";
     }
 
     @RequestMapping(value = "del")
-    public ModelAndView del(HttpServletRequest request){
+    public String del(HttpServletRequest request){
+        HttpSession session = request.getSession();
         String delFileName = request.getParameter("delFileName");
         Message message = new Message();
         if(!StringUtils.isEmpty(delFileName)){
             File delFile = new File(filepath + delFileName);
             delFile.delete();
             message.setSuccess("文件删除成功!");
+            session.setAttribute("message", message);
         }
-        return show(request, message);
+        return "redirect:/show";
     }
 
     @RequestMapping(value = "/show")
-    public ModelAndView show(HttpServletRequest request, Message message) {
-        String currentPage = request.getParameter("currentPage");
+    public ModelAndView show(HttpServletRequest request) {
+        String currentPage = "0";
+        if(request != null){
+            currentPage = request.getParameter("currentPage");
+        }
+
         PageUtil pageUtil = new PageUtil();
         if(this.pageSize != 0){
             pageUtil.setPageSize(this.pageSize);
@@ -96,24 +108,22 @@ public class FileController {
         }
         File targetFile = new File(filepath);
         File[] files = targetFile.listFiles();
-        if(files.length == 0){
+        List<FileInfo> fileInfos = new ArrayList<FileInfo>();
+        if(files == null || files.length == 0){
             pageUtil.setSumPage(0);
         }else{
             int sumPage = (files.length / pageUtil.getPageSize());
             pageUtil.setSumPage(files.length % pageUtil.getPageSize() == 0 ? sumPage : sumPage + 1);
+            for(int i = pageUtil.getCurrentPage() * pageUtil.getPageSize(); (i < (pageUtil.getCurrentPage()+1) * pageUtil.getPageSize()) && (i < files.length); i++){
+                FileInfo fileInfo = new FileInfo();
+                fileInfo.setFileName(files[i].getName());
+                fileInfo.setFileSize(FileUtils.getFormatSize(files[i].length()));
+                fileInfos.add(fileInfo);
+            }
         }
-        List<FileInfo> fileInfos = new ArrayList<FileInfo>();
-        for(int i = pageUtil.getCurrentPage() * pageUtil.getPageSize(); (i < (pageUtil.getCurrentPage()+1) * pageUtil.getPageSize()) && (i < files.length); i++){
-            FileInfo fileInfo = new FileInfo();
-            fileInfo.setFileName(files[i].getName());
-            fileInfo.setFileSize(FileUtils.getFormatSize(files[i].length()));
-            fileInfos.add(fileInfo);
-        }
-
         ModelAndView modelAndView = new ModelAndView("fileList");
         modelAndView.getModel().put("fileInfos", fileInfos);
         modelAndView.getModel().put("pageUtil", pageUtil);
-        modelAndView.getModel().put("message", message);
         return modelAndView;
     }
 
