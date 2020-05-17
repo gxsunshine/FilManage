@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.net.URLEncoder;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,9 +122,15 @@ public class FileController {
                 fileInfos.add(fileInfo);
             }
         }
+        HttpSession session = request.getSession();
+        Message message = (Message)session.getAttribute("message");
         ModelAndView modelAndView = new ModelAndView("fileList");
         modelAndView.getModel().put("fileInfos", fileInfos);
         modelAndView.getModel().put("pageUtil", pageUtil);
+        if(message != null){
+            modelAndView.getModel().put("message", message);
+            session.removeAttribute("message");
+        }
         return modelAndView;
     }
 
