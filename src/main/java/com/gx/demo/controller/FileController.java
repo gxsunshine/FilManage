@@ -64,14 +64,36 @@ public class FileController {
                 return "redirect:/show";
             }
         }
-        try (FileOutputStream out = new FileOutputStream(filepath + file.getOriginalFilename());){
-            out.write(file.getBytes());
+        byte[] bytes = new byte[1024];
+        InputStream fis = null;
+        FileOutputStream out = null;
+        try{
+            out = new FileOutputStream(filepath + file.getOriginalFilename());
+            fis = file.getInputStream();
+            // 分批写入内存，然后写入文件。
+            while (fis.read(bytes) != -1){
+                out.write(bytes);
+            }
+            // 一次性把文件写入内存，容易造成内存溢出
+//            out.write(file.getBytes());
             out.flush();
         } catch (Exception e) {
             e.printStackTrace();
             logger.error("文件上传失败!");
             message.setError("文件上传失败!");
             throw new RuntimeException(e);
+        } finally {
+            try {
+                if(fis != null){
+                    fis.close();
+                }
+                if(out != null){
+                    out.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("关闭上传文件流失败！");
+            }
         }
         logger.info("文件上传成功!");
         message.setSuccess("文件上传成功!");
