@@ -1,16 +1,19 @@
 package com.gx.demo.controller;
 
+import com.gx.demo.common.PromptMessage;
 import com.gx.demo.model.FileInfo;
 import com.gx.demo.model.Message;
 import com.gx.demo.model.PageUtil;
 import com.gx.demo.utils.FileUtils;
 import org.apache.catalina.Session;
+import org.apache.tomcat.util.http.fileupload.impl.SizeLimitExceededException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +41,8 @@ public class FileController {
     private String filepath;
     @Value("${pageSize}")
     private int pageSize;
+    @Value("${upload.file.max.size}")
+    private Long uploadFileSize;
 
     @RequestMapping(value = "/hello")
     public String uploading() {
@@ -47,19 +52,26 @@ public class FileController {
     /**
      * 处理文件上传
      */
-    @RequestMapping(value = "/upload")
+    @RequestMapping(value = "/upload", method = RequestMethod.POST ,headers = "content-type=multipart/*")
     public String uploading(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
 
         HttpSession session = request.getSession();
         File targetFile = new File(filepath);
         Message message = new Message();
+        if(file.getSize() > uploadFileSize){
+            logger.error(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
+            message.setError(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
+            session.setAttribute("message", message);
+            return "redirect:/show";
+        }
         if (!targetFile.exists()) {
             targetFile.mkdirs();
         }
         File[] files = targetFile.listFiles();
         for(File diskFile: files){
             if(diskFile.getName().equals(file.getOriginalFilename())){
-                message.setError("文件上传失败！文件名重复，该文件已上传；建议修改文件名后继续上传，或者删除已上传的文件");
+                logger.error(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
+                message.setError(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
                 session.setAttribute("message", message);
                 return "redirect:/show";
             }
@@ -79,9 +91,9 @@ public class FileController {
             out.flush();
         } catch (Exception e) {
             e.printStackTrace();
-            logger.error("文件上传失败!");
-            message.setError("文件上传失败!");
-            throw new RuntimeException(e);
+            logger.error(PromptMessage.FILE_UPLOAD_FAIL);
+            message.setError(PromptMessage.FILE_UPLOAD_FAIL);
+//            throw new RuntimeException(e);
         } finally {
             try {
                 if(fis != null){
@@ -92,11 +104,11 @@ public class FileController {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-                logger.error("关闭上传文件流失败！");
+                logger.error(PromptMessage.CLOSE_FILE_STREAM_FAIL);
             }
         }
-        logger.info("文件上传成功!");
-        message.setSuccess("文件上传成功!");
+        logger.info(PromptMessage.FILE_UPLOAD_SUCCESS);
+        message.setSuccess(PromptMessage.FILE_UPLOAD_SUCCESS);
         session.setAttribute("message", message);
         return "redirect:/show";
     }
@@ -109,7 +121,8 @@ public class FileController {
         if(!StringUtils.isEmpty(delFileName)){
             File delFile = new File(filepath + delFileName);
             delFile.delete();
-            message.setSuccess("文件删除成功!");
+            logger.info(PromptMessage.FILE_DELETE_SUCCESS);
+            message.setSuccess(PromptMessage.FILE_DELETE_SUCCESS);
             session.setAttribute("message", message);
         }
         return "redirect:/show";
@@ -179,5 +192,15 @@ public class FileController {
                 e.printStackTrace();
             }
         }
+    }
+
+    @RequestMapping("/exception")
+    public void exception(){
+        throw new ArrayIndexOutOfBoundsException("数据越界了");
+//        try {
+//            throw new SizeLimitExceededException("exception", 100L ,200L);
+//        } catch (SizeLimitExceededException e) {
+//            e.printStackTrace();
+//        }
     }
 }
