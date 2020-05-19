@@ -42,8 +42,6 @@ public class FileController {
     private String filepath;
     @Value("${pageSize}")
     private int pageSize;
-    @Value("${upload.file.max.size}")
-    private Long uploadFileSize;
 
     @RequestMapping(value = "/hello")
     public String uploading() {
@@ -58,13 +56,6 @@ public class FileController {
         HttpSession session = request.getSession();
         File targetFile = new File(filepath);
         Message message = new Message();
-        // 上传文件大小超过限制
-        if(file.getSize() > uploadFileSize){
-            logger.error(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
-            message.setError(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
-            session.setAttribute("message", message);
-            return "redirect:/show";
-        }
         if (!targetFile.exists()) {
             targetFile.mkdirs();
         }

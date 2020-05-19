@@ -3,6 +3,8 @@ package com.gx.demo.config;
 import com.gx.demo.common.PromptMessage;
 import com.gx.demo.model.Message;
 import org.apache.tomcat.util.http.fileupload.impl.SizeLimitExceededException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -22,6 +24,8 @@ import java.io.IOException;
 
 @ControllerAdvice
 public class CustomExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomExceptionHandler.class);
     /**
      * 捕获 SizeLimitExceededException， 但是没有效果。待研究
      * @param e
@@ -42,21 +46,19 @@ public class CustomExceptionHandler {
     }
 
     /**
-     * 捕获 MaxUploadSizeExceededException 异常（spring.servlet.multipart.maxFileSize）触发
-     * 可以正常捕获，但是文件比较大（超过10M），页面重定向不正常，1M 是正常的
+     * 捕获 MaxUploadSizeExceededException 异常（spring.servlet.multipart.maxFileSize和maxRequestSize）触发
      * @param e
      * @param request
      * @return
      * @throws IOException
      */
     @ExceptionHandler(MultipartException.class)
-//    @ResponseBody
     public String uploadException(MaxUploadSizeExceededException e, HttpServletRequest request) throws IOException {
         e.printStackTrace();
         HttpSession session = request.getSession();
-        System.out.println("MaxUploadSizeExceededException + MaxUploadSizeExceededException ");
         Message message = new Message();
         if(session != null){
+            logger.error(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
             message.setError(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
             session.setAttribute("message", message);
         }
