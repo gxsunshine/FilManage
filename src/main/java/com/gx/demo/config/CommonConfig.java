@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @Author: gx
  * @Date: Created in 2020/5/17 23:24
- * @Description:
+ * @Description: 公用的配置
  */
 @Configuration
 public class CommonConfig {

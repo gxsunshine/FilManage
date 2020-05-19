@@ -2,7 +2,7 @@ package com.gx.demo.model;
 
 /**
  * @ClassName FileInfo
- * @Description TODO
+ * @Description 文件信息model
  * @Authtor guoxiang
  * @Date 2020/5/15 14:42
  **/

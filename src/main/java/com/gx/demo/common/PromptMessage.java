@@ -2,7 +2,7 @@ package com.gx.demo.common;
 
 /**
  * @ClassName PromptMessage
- * @Description TODO
+ * @Description 提示消息公用类
  * @Authtor guoxiang
  * @Date 2020/5/18 14:58
  **/

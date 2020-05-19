@@ -29,10 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @Author: gx
- * @Date: Created in 2020/3/12 15:16
- * @Description: Hello Controller类
- */
+  *@ClassName FileController
+  *@Description 文件上传控制类
+  *@Authtor guoxiang
+  *@Date 2020/5/19 10:05
+ **/
 @Controller
 //@RequestMapping("file")
 public class FileController {
@@ -54,10 +55,10 @@ public class FileController {
      */
     @RequestMapping(value = "/upload", method = RequestMethod.POST ,headers = "content-type=multipart/*")
     public String uploading(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
-
         HttpSession session = request.getSession();
         File targetFile = new File(filepath);
         Message message = new Message();
+        // 上传文件大小超过限制
         if(file.getSize() > uploadFileSize){
             logger.error(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
             message.setError(PromptMessage.UPLOAD_FILE_SIZE_EXCEED_LIMIT);
@@ -67,6 +68,7 @@ public class FileController {
         if (!targetFile.exists()) {
             targetFile.mkdirs();
         }
+        // 处理文件重名
         File[] files = targetFile.listFiles();
         for(File diskFile: files){
             if(diskFile.getName().equals(file.getOriginalFilename())){
@@ -113,6 +115,11 @@ public class FileController {
         return "redirect:/show";
     }
 
+    /**
+     * 文件删除
+     * @param request
+     * @return
+     */
     @RequestMapping(value = "del")
     public String del(HttpServletRequest request){
         HttpSession session = request.getSession();
@@ -124,17 +131,26 @@ public class FileController {
             logger.info(PromptMessage.FILE_DELETE_SUCCESS);
             message.setSuccess(PromptMessage.FILE_DELETE_SUCCESS);
             session.setAttribute("message", message);
+        }else {
+            logger.info(PromptMessage.FILE_DELETE_FAIL);
+            message.setSuccess(PromptMessage.FILE_DELETE_FAIL);
+            session.setAttribute("message", message);
         }
         return "redirect:/show";
     }
 
+    /**
+     * 显示文件列表 - 分页
+     * @param request
+     * @return
+     */
     @RequestMapping(value = "/show")
     public ModelAndView show(HttpServletRequest request) {
+        // 分页
         String currentPage = "0";
         if(request != null){
             currentPage = request.getParameter("currentPage");
         }
-
         PageUtil pageUtil = new PageUtil();
         if(this.pageSize != 0){
             pageUtil.setPageSize(this.pageSize);
@@ -145,9 +161,11 @@ public class FileController {
         File targetFile = new File(filepath);
         File[] files = targetFile.listFiles();
         List<FileInfo> fileInfos = new ArrayList<FileInfo>();
+        // 目标文件夹为null的情况
         if(files == null || files.length == 0){
             pageUtil.setSumPage(0);
         }else{
+            // 计算分页需要的一些属性
             int sumPage = (files.length / pageUtil.getPageSize());
             pageUtil.setSumPage(files.length % pageUtil.getPageSize() == 0 ? sumPage : sumPage + 1);
             for(int i = pageUtil.getCurrentPage() * pageUtil.getPageSize(); (i < (pageUtil.getCurrentPage()+1) * pageUtil.getPageSize()) && (i < files.length); i++){
@@ -157,22 +175,31 @@ public class FileController {
                 fileInfos.add(fileInfo);
             }
         }
+        // 从session中获取提示信息
         HttpSession session = request.getSession();
         Message message = (Message)session.getAttribute("message");
         ModelAndView modelAndView = new ModelAndView("fileList");
         modelAndView.getModel().put("fileInfos", fileInfos);
         modelAndView.getModel().put("pageUtil", pageUtil);
         if(message != null){
+            // 把提示信息放到Model中，并清除session中的提示信息 - 反正前端页面刷新后还要提醒信息
             modelAndView.getModel().put("message", message);
             session.removeAttribute("message");
         }
         return modelAndView;
     }
 
+    /**
+     * 文件下载
+     * @param response
+     * @param request
+     * @throws UnsupportedEncodingException
+     */
     @RequestMapping("/download")
     public void downLoad(HttpServletResponse response, HttpServletRequest request) throws UnsupportedEncodingException {
         String filename= request.getParameter("fileName");
         File file = new File(filepath + filename);
+        // 把下载文件，写入到Response的流当中
         if(file.exists()){
             response.setContentType("application/octet-stream");
             response.setHeader("content-type", "application/octet-stream");

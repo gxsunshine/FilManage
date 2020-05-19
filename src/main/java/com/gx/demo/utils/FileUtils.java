@@ -4,11 +4,16 @@ import java.math.BigDecimal;
 
 /**
  * @ClassName FileUtils
- * @Description TODO
+ * @Description 文件工具类
  * @Authtor guoxiang
  * @Date 2020/5/15 14:42
  **/
 public class FileUtils {
+    /**
+     * 根据文件字节数，格式化文件大小 1024Byte=1KB
+     * @param size 文件字节数
+     * @return
+     */
     public static String getFormatSize(double size) {
         double kiloByte = size/1024;
         if(kiloByte < 1) {

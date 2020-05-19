@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 /**
  * @ClassName PageUtil
- * @Description TODO
+ * @Description 分页信息Model
  * @Authtor guoxiang
  * @Date 2020/5/15 9:32
  **/
