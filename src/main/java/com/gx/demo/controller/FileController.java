@@ -26,6 +26,7 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -49,61 +50,26 @@ public class FileController {
     }
 
     /**
-     * 处理文件上传
+     * 处理文件上传 -- 前台
      */
-    @RequestMapping(value = "/upload", method = RequestMethod.POST ,headers = "content-type=multipart/*")
-    public String uploading(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+    @RequestMapping(value = "/uploadFe", method = RequestMethod.POST ,headers = "content-type=multipart/*")
+    public String uploadFe(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
         HttpSession session = request.getSession();
-        File targetFile = new File(filepath);
         Message message = new Message();
-        if (!targetFile.exists()) {
-            targetFile.mkdirs();
-        }
-        // 处理文件重名
-        File[] files = targetFile.listFiles();
-        for(File diskFile: files){
-            if(diskFile.getName().equals(file.getOriginalFilename())){
-                logger.error(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
-                message.setError(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
-                session.setAttribute("message", message);
-                return "redirect:/show";
-            }
-        }
-        byte[] bytes = new byte[1024];
-        InputStream fis = null;
-        FileOutputStream out = null;
-        try{
-            out = new FileOutputStream(filepath + file.getOriginalFilename());
-            fis = file.getInputStream();
-            // 分批写入内存，然后写入文件。
-            while (fis.read(bytes) != -1){
-                out.write(bytes);
-            }
-            // 一次性把文件写入内存，容易造成内存溢出
-//            out.write(file.getBytes());
-            out.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.error(PromptMessage.FILE_UPLOAD_FAIL);
-            message.setError(PromptMessage.FILE_UPLOAD_FAIL);
-//            throw new RuntimeException(e);
-        } finally {
-            try {
-                if(fis != null){
-                    fis.close();
-                }
-                if(out != null){
-                    out.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                logger.error(PromptMessage.CLOSE_FILE_STREAM_FAIL);
-            }
-        }
-        logger.info(PromptMessage.FILE_UPLOAD_SUCCESS);
-        message.setSuccess(PromptMessage.FILE_UPLOAD_SUCCESS);
-        session.setAttribute("message", message);
+        uploadFile(file, session, message);
         return "redirect:/show";
+    }
+
+    /**
+     * 处理文件上传 -- 后台
+     */
+    @ResponseBody
+    @RequestMapping(value = "/upload", method = RequestMethod.POST ,headers = "content-type=multipart/*")
+    public String upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
+        HttpSession session = request.getSession();
+        Message message = new Message();
+        uploadFile(file, session, message);
+        return message.getSuccess() != null ? message.getSuccess() : message.getError();
     }
 
     /**
@@ -220,5 +186,70 @@ public class FileController {
 //        } catch (SizeLimitExceededException e) {
 //            e.printStackTrace();
 //        }
+    }
+
+    // 上传文件
+    public void uploadFile(MultipartFile file, HttpSession session,  Message message){
+        File targetFile = new File(filepath);
+        if (!targetFile.exists()) {
+            targetFile.mkdirs();
+        }
+        // 处理文件重名
+        File[] files = targetFile.listFiles();
+        int flag = 1;
+        for(File diskFile: files){
+            if(diskFile.getName().equals(file.getOriginalFilename())){
+                logger.error(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
+                message.setError(PromptMessage.UPLOAD_FILE_NAME_REPEAT);
+                session.setAttribute("message", message);
+                flag = 0;
+                break;
+            }
+        }
+        if (flag == 1){
+            Long startTime = new Date().getTime();
+            Long endTime;
+            logger.info("开始上传文件："+ file.getOriginalFilename());
+            byte[] bytes = new byte[1024];
+            InputStream fis = null;
+            FileOutputStream out = null;
+            try{
+                out = new FileOutputStream(filepath + file.getOriginalFilename());
+                fis = file.getInputStream();
+                // 分批写入内存，然后写入文件。
+                while (fis.read(bytes) != -1){
+                    out.write(bytes);
+                }
+                // 一次性把文件写入内存，容易造成内存溢出
+//            out.write(file.getBytes());
+                out.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.error(PromptMessage.FILE_UPLOAD_FAIL);
+                message.setError(PromptMessage.FILE_UPLOAD_FAIL);
+//            throw new RuntimeException(e);
+            } finally {
+                try {
+                    if(fis != null){
+                        fis.close();
+                    }
+                    if(out != null){
+                        out.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    logger.error(PromptMessage.CLOSE_FILE_STREAM_FAIL);
+                }
+            }
+            if(message.getError() == null){
+                endTime = new Date().getTime();
+                logger.info("上传文件耗时"+ (endTime-startTime) + "ms");
+                logger.info(PromptMessage.FILE_UPLOAD_SUCCESS);
+                message.setSuccess(PromptMessage.FILE_UPLOAD_SUCCESS);
+                session.setAttribute("message", message);
+            }
+
+        }
+
     }
 }

@@ -8,7 +8,7 @@ package com.gx.demo.common;
  **/
 public class PromptMessage {
     public static String FILE_UPLOAD_SUCCESS = "文件上传成功！";
-    public static String FILE_UPLOAD_FAIL = "文件下载失败！";
+    public static String FILE_UPLOAD_FAIL = "文件上传失败！";
     public static String FILE_DELETE_SUCCESS = "文件删除成功！";
     public static String FILE_DELETE_FAIL = "文件删除失败！";
     public static String UPLOAD_FILE_NAME_REPEAT = "文件上传失败！文件名重复，该文件已上传；建议修改文件名后继续上传，或者删除已上传的文件！";
